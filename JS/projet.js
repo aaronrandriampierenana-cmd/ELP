@@ -1,5 +1,4 @@
-// Flip 7 multijoueur - version terminal (Node.js)
-// Style simple, étudiant
+// Flip 7 multijoueur
 
 const readline = require("readline");
 
@@ -26,7 +25,7 @@ function makeDeck() {
     return deck;
 }
 
-function nextPlayer(players, current) {
+function prochainJoueur(players, current) {
     let tries = 0;
     do {
         current = (current + 1) % players.length;
@@ -35,36 +34,36 @@ function nextPlayer(players, current) {
     return current;
 }
 
-function allBusted(players) {
+function Busted(players) {
     return players.every(p => p.busted);
 }
 
 async function main() {
     console.log("=== Flip 7 Multijoueur (Terminal) ===");
     let n = Number(await ask("Nombre de joueurs (2 à 6): "));
-    while (isNaN(n) || n < 2 || n > 6) {
+    while (isNaN(n) || n < 2 || n > 6) { // Verif entrée est un nombre entre 2 et 6
         n = Number(await ask("Choisis un nombre entre 2 et 6: "));
     }
 
     const players = [];
     for (let i = 0; i < n; i++) {
-        const name = await ask(`Nom du joueur ${i + 1} (enter = Joueur ${i + 1}): `);
-        players.push({ name: name || `Joueur ${i + 1}`, cards: [], busted: false });
+        const name = await ask(`Nom du joueur ${i+1 } (enter = Joueur ${i+1 }): `);
+        players.push({ name: name || `Joueur ${i+1 }`, cards: [], busted: false });
     }
 
     let deck = makeDeck();
-    let current = 0;
+    let joueurActuel = 0;
     let winner = null;
 
     while (!winner) {
-        if (allBusted(players)) {
+        if (Busted(players)) {
             console.log("Tous les joueurs sont éliminés. Fin de manche.");
             break;
         }
 
-        const p = players[current];
+        const p = players[joueurActuel];
         if (p.busted) {
-            current = nextPlayer(players, current);
+            joueurActuel = prochainJoueur(players, joueurActuel);
             continue;
         }
 
@@ -74,8 +73,8 @@ async function main() {
 
         if (action === "h") {
             console.log(p.name + " s'arrête.");
-            current = nextPlayer(players, current);
-            continue;
+            joueurActuel = prochainJoueur(players, joueurActuel);
+            break;
         }
 
         if (deck.length === 0) deck = makeDeck();
@@ -85,10 +84,14 @@ async function main() {
         if (p.cards.includes(card)) {
             p.busted = true;
             console.log("💥 Doublon, " + p.name + " est éliminé pour la manche.");
-            current = nextPlayer(players, current);
+            joueurActuel = prochainJoueur(players, joueurActuel);
             continue;
         }
 
+        if (players.length===1||action === "h") {
+           console.log("🎉 " + p.name + " gagne la manche! le boss avec !"+card);
+           break;
+        }
         p.cards.push(card);
         if (p.cards.length === 7) {
             winner = p;
@@ -96,7 +99,7 @@ async function main() {
             break;
         }
 
-        current = nextPlayer(players, current);
+        joueurActuel = prochainJoueur(players, joueurActuel);
     }
 
     rl.close();
