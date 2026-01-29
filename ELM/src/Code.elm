@@ -60,7 +60,7 @@ type Msg
     | Restart -- recommencer une partie
     | Tick Time.Posix -- evenement de tick pour le timer
 
-
+--fonction qui sert à
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.statut of
@@ -90,7 +90,7 @@ update msg model =
                 , timeLeft = timeLimitSeconds
               }
             , Http.get
-                { url = "https://api.dictionaryapi.dev/api/v2/entries/en/" ++ mot
+                { url = "https://api.dictionaryapi.dev/api/v2/entries/en/" ++ mot--ajoute le mot à l'url pour trouver la page avec les defs
                 , expect = Http.expectString GetDefinition
                 }
               -- lancer la requete HTTP pour recuperer les definitions
@@ -100,14 +100,14 @@ update msg model =
             -- resultat de la requete HTTP
             case result of
                 Ok chain ->
-                    -- requete reussie, parser les definitions
+                    -- requete reussie, decode les definitions
                     case Decode.decodeString definitionsDecoder chain of
                         Ok defs ->
                             ( { model | definitions = defs, statut = Playing }, Cmd.none )
 
                         Err _ ->
-                            -- erreur de parsing
-                            ( { model | error = Just "Erreur de parsing" }, Cmd.none )
+                            -- erreur de decodage
+                            ( { model | error = Just "Erreur de décodage" }, Cmd.none )
 
                 Err _ ->
                     -- erreur de requete HTTP
@@ -145,7 +145,7 @@ update msg model =
             -- evenement de tick pour le timer
             case model.statut of
                 Playing ->
-                    if model.timeLeft <= 1 then
+                    if model.timeLeft <= 1 then--évite chiffre négatif
                         -- temps ecoule
                         ( { model | timeLeft = 0, statut = GameOver }, Cmd.none )
                         -- passer en etat GameOver
@@ -159,24 +159,25 @@ update msg model =
                     ( model, Cmd.none )
 
 
-definitionsDecoder : Decoder (List String)
+definitionsDecoder : Decoder (List String)--attends une liste
 definitionsDecoder =
     Decode.list entryDecoder
         -- decoder pour une liste d'entrées
-        |> Decode.map List.concat
+        |> Decode.map List.concat--transforme les listes en une seule liste
 
 
 
 -- concaténer toutes les définitions
 
 
-entryDecoder : Decoder (List String)
+entryDecoder : Decoder (List String)--attends une liste
 entryDecoder =
-    Decode.field "meanings" (Decode.list meaningDecoder)
-        |> Decode.map List.concat
+    Decode.field "meanings" (Decode.list meaningDecoder) --cherche la clé meaning et 
+        |> Decode.map List.concat--transforme les listes en une seule liste
 
 
-meaningDecoder : Decoder (List String)
+
+meaningDecoder : Decoder (List String) --recoit les defs en liste d'objet
 meaningDecoder =
     Decode.field "definitions" (Decode.list definitionDecoder)
 
@@ -185,7 +186,7 @@ meaningDecoder =
 -- decoder pour une liste de définitions
 
 
-definitionDecoder : Decoder String
+definitionDecoder : Decoder String--recoit un texte avec les def dans le json
 definitionDecoder =
     Decode.field "definition" Decode.string
 
@@ -196,7 +197,7 @@ definitionDecoder =
 
 view : Model -> Html Msg
 view model =
-    div
+    div--apparence du jeu
         [ style "padding" "20px"
         , style "font-family" "sans-serif"
         , style "min-height" "100vh"
@@ -207,14 +208,14 @@ view model =
         , style "background-repeat" "no-repeat, no-repeat"
         ]
         (h1 [] [ text "Guess It!" ]
-            :: (case model.error of
+            :: (case model.error of--ajoute lebloc d'erreur
                     Just err ->
                         [ div [ style "color" "red" ] [ text err ] ]
 
                     Nothing ->
                         []
                )
-            ++ [ case model.statut of
+            ++ [ case model.statut of--fusionne le reste de l'interface
                     Loading ->
                         text "Loading..."
 
@@ -227,8 +228,8 @@ view model =
                             , div [ style "margin-top" "20px" ]
                                 [ label [] [ text "Type in to guess" ]
                                 , br [] []
-                                , input [ value model.mot_propose, onInput ChangerReponse, style "border" "2px solid black" ] []
-                                , button [ onClick VerifierReponse, style "margin-left" "10px" ] [ text "Check" ]
+                                , input [ value model.mot_propose, onInput ChangerReponse, style "border" "2px solid black" ] []--input pour le mot proposer
+                                , button [ onClick VerifierReponse, style "margin-left" "10px" ] [ text "Check" ]--declenche update
                                 ]
                             ]
 
