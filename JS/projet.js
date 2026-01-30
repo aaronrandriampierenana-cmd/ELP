@@ -7,7 +7,7 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-function demander(question) { // Pose une question et retourne la réponse
+function demander(question) {
     return new Promise((resolve) => {
         rl.question(question, (answer) => resolve(answer.trim()));
     });
@@ -30,17 +30,30 @@ function creerDeck() { // Crée et mélange le deck
     return deck;
 }
 
-function prochainJoueur(players, current) {
-    let tries = 0;
+function prochainJoueur(joueurs, current) {
+    let tries = 0; 
     do {
-        current = (current + 1) % players.length;
+        current = (current + 1) % joueurs.length;
         tries++;
-    } while (players[current].busted && tries < players.length);
+    } while ((joueurs[current].elimine || joueurs[current].arrete) && tries < joueurs.length);
     return current;
 }
 
-function Elimines(players) { // Vérifie si tous les joueurs sont éliminés
-    return players.every(p => p.elimine);
+function Elimines(joueurs) { // Vérifie si tous les joueurs sont éliminés
+    return joueurs.every(p => p.elimine); // Tous les joueurs sont éliminés
+}
+
+function valeurCarte(card) {
+    if (typeof card === "number") return card;
+    if (typeof card === "string") {
+        if (/^\d+$/.test(card)) return Number(card);
+        if (card === "F3") return 3;
+    }
+    return 0;
+}
+
+function sommeCartes(cards) {
+    return cards.reduce((sum, c) => sum + valeurCarte(c), 0);
 }
 
 async function main() {
@@ -53,58 +66,97 @@ async function main() {
     const joueurs = [];
     for (let i = 0; i < n; i++) {
         const name = await demander(`Nom du joueur ${i+1 } (enter = Joueur ${i+1 }): `);
-        joueurs.push({ name: name || `Joueur ${i+1 }`, cards: [], elimine: false });
+        joueurs.push({ name: name || `Joueur ${i+1 }`, cards: [], elimine: false, arrete: false, score: 0 });
     }
 
-    let deck = creerDeck();
     let joueurActuel = 0;
+    let manche = 1;
     let gagnant = null;
 
     while (!gagnant) {
-        if (Elimines(joueurs)) {
-            console.log("Tous les joueurs sont éliminés. Fin de manche.");
+        console.log("\n=== Manche " + manche + " ===");
+        let deck = creerDeck();
+        joueurs.forEach(p => {
+            p.cards = [];
+            p.elimine = false;
+            p.arrete = false;
+        });
+
+        let finManche = false;
+        while (!finManche) {
+            if (Elimines(joueurs)) {
+                console.log("Tous les joueurs sont éliminés. Fin de manche.");
+                break;
+            }
+
+            if (joueurs.every(p => p.elimine || p.arrete)) {
+                console.log("Tous les joueurs se sont arrêtés ou sont éliminés. Fin de manche.");
+                break;
+            }
+
+            const p = joueurs[joueurActuel];
+            if (p.elimine || p.arrete) {
+                joueurActuel = prochainJoueur(joueurs, joueurActuel);
+                continue;
+            }
+
+            console.log("\n--- Tour de " + p.name + " ---");
+            console.log("Cartes: " + (p.cards.join(", ") || "(aucune)"));
+            const action = (await demander("Action (f = retourner, h = s'arrêter): ")).toLowerCase();
+
+            if (action === "h") {
+                p.arrete = true;
+                console.log(p.name + " s'arrête.");
+                joueurActuel = prochainJoueur(joueurs, joueurActuel);
+                continue;
+            }
+
+            if (deck.length === 0) deck = creerDeck();
+            const card = deck.pop();
+            console.log(p.name + " retourne un " + card);
+
+            if (p.cards.includes(card)) {
+                p.elimine = true;
+                console.log("Doublon, " + p.name + " est éliminé pour la manche.");
+                joueurActuel = prochainJoueur(joueurs, joueurActuel);
+                continue;
+            }
+
+            p.cards.push(card);
+            if (p.cards.length === 7) {
+                console.log(p.name + " gagne la manche avec 7 cartes différentes !");
+                finManche = true;
+                break;
+            }
+
+            joueurActuel = prochainJoueur(joueurs, joueurActuel);
+        }
+
+        console.log("\n--- Scores de la manche " + manche + " ---");
+        joueurs.forEach(p => {
+            const points = p.elimine ? 0 : sommeCartes(p.cards);
+            p.score += points;
+            console.log(p.name + ": +" + points + " points (total: " + p.score + ")");
+        });
+
+        const meilleurScore = Math.max(...joueurs.map(p => p.score));
+        const gagnants = joueurs.filter(p => p.score >= 200 && p.score === meilleurScore);
+        if (gagnants.length > 0) {
+            gagnant = gagnants;
             break;
         }
 
-        const p = joueurs[joueurActuel];
-        if (p.elimine) {
-            joueurActuel = prochainJoueur(joueurs, joueurActuel);
-            continue;
-        }
-
-        console.log("\n--- Tour de " + p.name + " ---");
-        console.log("Cartes: " + (p.cards.join(", ") || "(aucune)"));
-        const action = (await demander("Action (f = retourner, h = s'arrêter): ")).toLowerCase();
-
-        if (action === "h") {
-            console.log(p.name + " s'arrête.");
-            joueurActuel = prochainJoueur(joueurs, joueurActuel);
-            break;
-        }
-
-        if (deck.length === 0) deck = creerDeck();
-        const card = deck.pop();
-        console.log(p.name + " retourne un " + card);
-
-        if (p.cards.includes(card)) {
-            p.elimine = true;
-            console.log("Doublon, " + p.name + " est éliminé pour la manche.");
-            joueurActuel = prochainJoueur(joueurs, joueurActuel);
-            continue;
-        }
-
-        if (joueurs.length===1||action === "h") {
-           console.log(p.name + " gagne la manche! le boss avec !"+card);
-           break;
-        }
-        p.cards.push(card);
-        if (p.cards.length === 7) {
-            gagnant = p;
-            console.log(p.name + " gagne avec 7 cartes différentes !");
-            break;
-        }
-
+        manche += 1;
         joueurActuel = prochainJoueur(joueurs, joueurActuel);
+    }
+
+    if (gagnant && Array.isArray(gagnant)) {
+        if (gagnant.length === 1) {
+            console.log("\n=== " + gagnant[0].name + " gagne la partie avec " + gagnant[0].score + " points ! ===");
+        } else {
+            const noms = gagnant.map(w => w.name).join(", ");
+            console.log("\n=== Égalité ! Gagnants: " + noms + " avec " + gagnant[0].score + " points. ===");
+        }
     }
 
     rl.close();
