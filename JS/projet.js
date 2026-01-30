@@ -47,7 +47,6 @@ function valeurCarte(card) {
     if (typeof card === "number") return card;
     if (typeof card === "string") {
         if (/^\d+$/.test(card)) return Number(card);
-        if (card === "F3") return 3;
     }
     return 0;
 }
@@ -111,25 +110,34 @@ async function main() {
                 continue;
             }
 
-            if (deck.length === 0) deck = creerDeck();
-            const card = deck.pop();
-            console.log(p.name + " retourne un " + card);
+            let flipsRestants = 1;
+            while (flipsRestants > 0) {
+                flipsRestants--;
+                if (deck.length === 0) deck = creerDeck();
+                const card = deck.pop();
+                console.log(p.name + " retourne un " + card);
 
-            if (p.cards.includes(card)) {
-                p.elimine = true;
-                console.log("Doublon, " + p.name + " est éliminé pour la manche.");
+                if (p.cards.includes(card)) {
+                    p.elimine = true;
+                    console.log("Doublon, " + p.name + " est éliminé pour la manche.");
+                    break;
+                }
+
+                p.cards.push(card);
+                if (card === "F3") {
+                    flipsRestants += 2; // flip 3 fois d'affilée au total
+                }
+
+                if (p.cards.length === 7) {
+                    console.log(p.name + " gagne la manche avec 7 cartes différentes !");
+                    finManche = true;
+                    break;
+                }
+            }
+
+            if (!finManche) {
                 joueurActuel = prochainJoueur(joueurs, joueurActuel);
-                continue;
             }
-
-            p.cards.push(card);
-            if (p.cards.length === 7) {
-                console.log(p.name + " gagne la manche avec 7 cartes différentes !");
-                finManche = true;
-                break;
-            }
-
-            joueurActuel = prochainJoueur(joueurs, joueurActuel);
         }
 
         console.log("\n--- Scores de la manche " + manche + " ---");
