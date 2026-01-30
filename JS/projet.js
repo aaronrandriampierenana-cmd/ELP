@@ -18,6 +18,7 @@ function makeDeck() { // Crée et mélange le deck
     for (let v = 1; v <= 12; v++) { 
         for (let i = 0; i <v; i++) deck.push(v);// Ajoute v copies de la carte v
     }
+    deck.push("S");
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
