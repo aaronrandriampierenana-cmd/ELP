@@ -1,6 +1,6 @@
 // Flip 7 multijoueur
 
-const readline = require("readline");
+const readline = require("readline");// Pour interaction terminal
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -13,10 +13,10 @@ function ask(question) {
     });
 }
 
-function makeDeck() {
-    const deck = [];
-    for (let v = 1; v <= 7; v++) {
-        for (let i = 0; i < 4; i++) deck.push(v);
+function makeDeck() { // Crée et mélange le deck
+    const deck = [0];
+    for (let v = 1; v <= 12; v++) { 
+        for (let i = 0; i <v; i++) deck.push(v);// Ajoute v copies de la carte v
     }
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -34,7 +34,7 @@ function prochainJoueur(players, current) {
     return current;
 }
 
-function Busted(players) {
+function Busted(players) { // Vérifie si tous les joueurs sont éliminés
     return players.every(p => p.busted);
 }
 
@@ -83,20 +83,19 @@ async function main() {
 
         if (p.cards.includes(card)) {
             p.busted = true;
-            console.log("💥 Doublon, " + p.name + " est éliminé pour la manche.");
+            console.log("Doublon, " + p.name + " est éliminé pour la manche.");
             joueurActuel = prochainJoueur(players, joueurActuel);
             continue;
         }
 
         if (players.length===1||action === "h") {
-           console.log("🎉 " + p.name + " gagne la manche! le boss avec "+card);
+           console.log(p.name + " gagne la manche! le boss avec !"+card);
            break;
         }
         p.cards.push(card);
         if (p.cards.length === 7) {
             winner = p;
-            console.log("🎉 " + p.name + " gagne avec 7 cartes différentes 
-                    ");
+            console.log(p.name + " gagne avec 7 cartes différentes !");
             break;
         }
 
