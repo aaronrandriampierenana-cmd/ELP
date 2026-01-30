@@ -56,7 +56,7 @@ function sommeCartes(cards) {
 }
 
 async function main() {
-    console.log("=== Flip 7 Multijoueur (Terminal) ===");
+    console.log("=== Flip 7===");
     let n = Number(await demander("Nombre de joueurs (2 à 6): "));
     while (isNaN(n) || n < 2 || n > 6) { // Verif entrée est un nombre entre 2 et 6
         n = Number(await demander("Choisis un nombre entre 2 et 6: "));
@@ -65,7 +65,7 @@ async function main() {
     const joueurs = [];
     for (let i = 0; i < n; i++) {
         const name = await demander(`Nom du joueur ${i+1 } (enter = Joueur ${i+1 }): `);
-        joueurs.push({ name: name || `Joueur ${i+1 }`, cards: [], elimine: false, arrete: false, score: 0 });
+        joueurs.push({ name: name || `Joueur ${i+1 }`, cards: [], elimine: false, arrete: false, gele: false, secondeChance: 0, score: 0 });
     }
 
     let joueurActuel = 0;
@@ -79,6 +79,8 @@ async function main() {
             p.cards = [];
             p.elimine = false;
             p.arrete = false;
+            p.gele = false;
+            p.secondeChance = 0;
         });
 
         let finManche = false;
@@ -95,6 +97,13 @@ async function main() {
 
             const p = joueurs[joueurActuel];
             if (p.elimine || p.arrete) {
+                joueurActuel = prochainJoueur(joueurs, joueurActuel);
+                continue;
+            }
+
+            if (p.gele) {
+                console.log(p.name + " est gelé et saute ce tour.");
+                p.gele = false;
                 joueurActuel = prochainJoueur(joueurs, joueurActuel);
                 continue;
             }
@@ -117,15 +126,36 @@ async function main() {
                 const card = deck.pop();
                 console.log(p.name + " retourne un " + card);
 
+                if (card === "S") {
+                    p.secondeChance += 1;
+                    console.log(p.name + " garde une seconde chance.");
+                    continue;
+                }
+
                 if (p.cards.includes(card)) {
-                    p.elimine = true;
-                    console.log("Doublon, " + p.name + " est éliminé pour la manche.");
-                    break;
+                    if (p.secondeChance > 0) {
+                        p.secondeChance -= 1;
+                        console.log(p.name + " utilise une seconde chance et continue.");
+                        continue;
+                    } else {
+                        p.elimine = true;
+                        console.log("Doublon, " + p.name + " est éliminé pour la manche.");
+                        break;
+                    }
                 }
 
                 p.cards.push(card);
                 if (card === "F3") {
                     flipsRestants += 2; // flip 3 fois d'affilée au total
+                }
+                if (card === "F") {
+                    const prochain = prochainJoueur(joueurs, joueurActuel);
+                    if (prochain !== joueurActuel) {
+                        joueurs[prochain].gele = true;
+                        console.log(joueurs[prochain].name + " est gelé pour le prochain tour.");
+                    } else {
+                        console.log("Aucun autre joueur actif à geler.");
+                    }
                 }
 
                 if (p.cards.length === 7) {
