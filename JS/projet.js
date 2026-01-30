@@ -89,13 +89,14 @@ async function main() {
         }
 
         if (players.length===1||action === "h") {
-           console.log("🎉 " + p.name + " gagne la manche! le boss avec !"+card);
+           console.log("🎉 " + p.name + " gagne la manche! le boss avec "+card);
            break;
         }
         p.cards.push(card);
         if (p.cards.length === 7) {
             winner = p;
-            console.log("🎉 " + p.name + " gagne avec 7 cartes différentes !");
+            console.log("🎉 " + p.name + " gagne avec 7 cartes différentes 
+                    ");
             break;
         }
 
