@@ -4,7 +4,7 @@
 ## Introduction
 Le tri rapide ou Quick Sort est une méthode de tri rapide pour trier les listes en ordre croissant. 
 Dans ce projet nous avons essayé d'améliorer cet algorithme en le parallélisant.
-En effet en fonction du nombre de coeur de votre PC, le tri de la liste sera plus rapide. 
+En effet en fonction du nombre de coeur de votre machine, le tri de la liste sera plus rapide. 
 
 ## Principe de fonctionnement
 Ce projet fonctionne dans un pricipe de serveur client. Le client va générer une liste aléatoirement avec une taille donnée. 
